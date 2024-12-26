@@ -1,0 +1,44 @@
+﻿{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}اتصل بنا{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/contact.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="second">
+    <div class="container">
+        <div class="images">
+            <img src="{% static 'images/ALKAWAZjustlogo.jpeg' %}" class="logo" alt="COMPANY LOGO">
+        </div>
+        <h1>الكـواز</h1>
+        <h2>للبرمجيات وتكنلوجيا المعلومات</h2>
+    </div>
+</section>
+
+<main>
+    <div class="container">
+        <p>نعمل لخدمتكم وتحقيق منافعكم بتقديم كافة الحلول التقنية و البرمجية</p>
+        <p>يسعدنا اتصالكم</p>
+        <div class="boxs">
+            <div class="box">
+                <span>الموقع الالكتروني</span>
+                <span>www.alkawaz-it.com</span>
+            </div>
+            <div class="box">
+                <span>البريد الالكتروني</span>
+                <span>info@alkawaz-it.com</span>
+            </div>
+            <div class="box phones">
+                <span>هـواتـفـنـا</span>
+                <span>
+                    <p class="phone">+964-7716-634-634</p>
+                    <p class="phone">+964-7716-634-634</p>
+                </span>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
